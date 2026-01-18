@@ -4,7 +4,9 @@ import { eventRoute } from './router/events.js'
 import { participantsRoute } from './router/participants.js'
 
 const app = new Hono()
-
+app.get('/', (c) => {
+  return c.json('Welcome, the following endpoints are available: /events and /participants')
+});
 app.route("/events", eventRoute)
 app.route("/participants", participantsRoute)
 
