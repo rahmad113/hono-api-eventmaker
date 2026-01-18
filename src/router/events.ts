@@ -1,27 +1,30 @@
-import { Hono } from "hono";
-import { prisma } from "../utils/prisma.js";
+import { Hono } from 'hono';
+import { prisma } from '../utils/prisma.js';
 import { zValidator } from "@hono/zod-validator";
-import { create } from "domain";
-import { createEventValidation } from "../validation/event-validation.js";
+import { createEventValidation } from '../validation/event-validation.js';
 
-export const eventRoute = new Hono().get("/", (c) => {
-    return c.json({event:[]});
-})
-.get("/", async (c) => {
+export const eventRoute = new Hono()
+.get('/', async (c) => {
     const events = await prisma.event.findMany({
-        include: { participants: true },
+        include: {
+            participants: true,
+        },
     });
-    return c.json({events});
+    return c.json({ events });
 })
-.get("/:id", async (c) => {
-    const id = c.req.param("id");
+.get('/:id', async (c) => {
+    const id = c.req.param('id');
     const event = await prisma.event.findFirst({
-        where: { id: id },
-        include: { participants: true },
+        where : {
+            id: id,
+        },
+        include: {
+            participants: true,
+        },
     });
-    return c.json({event});
+    return c.json({ event });
 })
-.post("/", zValidator("json", createEventValidation), async (c) => {
+.post('/', zValidator("json", createEventValidation), async (c) => {
     const body = c.req.valid("json");
 
     const newEvent = await prisma.event.create({
@@ -30,30 +33,36 @@ export const eventRoute = new Hono().get("/", (c) => {
             description: body.description,
             datetime: body.datetime,
             location: body.location,
-        }
+        },
     });
-    return c.json({event: newEvent});
+
+    return c.json({ event: newEvent });
 })
-.patch("/:id", async (c) => {
-    const { id } = c.req.param();
-    const body = await c.req.json();
+.patch('/:id', zValidator("json", createEventValidation), async (c) => {
+    const id = c.req.param('id');
+    const body = c.req.valid("json");
 
     const updatedEvent = await prisma.event.update({
-        where: { id: id },
+        where: {
+            id: id,
+            },
         data: {
             name: body.name,
             description: body.description,
             datetime: body.datetime,
             location: body.location,
-        }
+        },
     });
-    return c.json({event: updatedEvent});
+    
+    return c.json({ event: updatedEvent });
 })
-.delete("/:id", async (c) => {
-    const { id } = c.req.param();
+.delete('/:id', async (c) => {
+    const id = c.req.param('id');
 
-   await prisma.event.delete({
-        where: { id: id },
+    const deletedEvent =  await prisma.event.delete({
+        where: {
+            id: id,
+        },
     });
-    return c.json({message: "Event deleted successfully "});
+    return c.json({ message: `Event deleted successfully` });
 });

@@ -1,37 +1,56 @@
-import { Hono } from "hono";
-import { prisma } from "../utils/prisma.js";
-import z from "zod";
-import { participantValidation } from "../validation/event-validation.js";
-import { zValidator } from "@hono/zod-validator";
+import { Hono } from 'hono';
+import { prisma } from '../utils/prisma.js';
+import { zValidator } from '@hono/zod-validator';
+import { createParticipantValidation } from '../validation/participants-validation.js';
 
-export const participantsRoute = new Hono().get("/", (c) => {
-    return c.json({participants:[]});
+export const participantsRoute = new Hono()
+.get('/', async (c) => {
+    const participants = await prisma.participant.findMany();
+    return c.json({ participants: participants });
 })
-.get("/", (c) => {
-    return c.json({participants:[]});
+.get('/:id', async (c) => {
+    const id = c.req.param('id');
+    const participant = await prisma.participant.findFirst({
+        where: {
+            id: id,
+        },
+    });
+    return c.json({ participant: participant });
 })
-.get("/:id", (c) => {
-    const { id } = c.req.param();
-    return c.json({participant:id});
-})
-.post("/", zValidator("json", participantValidation), async (c) => {
+.post('/',zValidator("json", createParticipantValidation), async (c) => {
     const body = c.req.valid("json");
+    
+    const newParticipant = await prisma.participant.create({
+        data: {
+            name: body.name,
+            email: body.email,
+            eventId: body.eventId,
+        },
+    });
 
-        const newParticipant = await prisma.participant.create({
-            data: {
-                name: body.name,
-                email: body.email,
-                eventId: body.eventId,
-            }
-        });
-
-    return c.json({participant: newParticipant});
+    return c.json({ participant: newParticipant });
 })
-.patch("/:id", (c) => {
-    const { id } = c.req.param();
-    return c.json({participant: id});
+.patch('/:id', zValidator("json", createParticipantValidation), async (c) => {
+    const id = c.req.param('id');
+    const body = c.req.valid("json");
+    const updatedParticipant = await prisma.participant.update({
+        where: {
+            id: id,
+        },
+        data: {
+            name: body.name,
+            email: body.email,
+            eventId: body.eventId,
+        },
+    });
+    return c.json({ participant: updatedParticipant });
 })
-.delete("/:id", (c) => {
-    const { id } = c.req.param();
-    return c.json({participant: id});
+.delete('/:id', async (c) => {
+    const id = c.req.param('id');
+    const deletedParticipant = await prisma.participant.delete({
+        where: {
+            id: id,
+        },
+    });
+    return c.json({ message: `Participant ${id} deleted` });
 });
